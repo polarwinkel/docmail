@@ -3,7 +3,7 @@ Version: 0.3.2-1
 Architecture: all
 Maintainer: Dirk Winkel <it@polarwinkel.de>
 Installed-Size: 76
-Depends: python (>= 2.7.0), sane (>= 1.0.0), imagemagick (>=6.0.0), cuneiform (>= 1.0.0), pdftk (>=1.4.0)
+Depends: python (>= 2.7.0), sane (>= 1.0.0), imagemagick (>=6.0.0), cuneiform (>= 1.0.0), pdftk (>=1.4.0), exactimage (>=0.8.9)
 Section: utils
 Priority: optional
 Homepage: http://polarwinkel.de
