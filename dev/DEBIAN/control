@@ -1,0 +1,14 @@
+Package: docmail
+Version: 0.3.2-1
+Architecture: all
+Maintainer: Dirk Winkel <it@polarwinkel.de>
+Installed-Size: 76
+Depends: python (>= 2.7.0), sane (>= 1.0.0), imagemagick (>=6.0.0), cuneiform (>= 1.0.0), pdftk (>=1.4.0)
+Section: utils
+Priority: optional
+Homepage: http://polarwinkel.de
+Description: micro document management system using eMail.
+ It Scans your documents or takes prictures from them, make an OCR to copy
+ the content searchable in an eMail. The scanned document are attached
+ as multi-page sandwich-pdf (searchable) and send to yourself (or whoever
+ you like).

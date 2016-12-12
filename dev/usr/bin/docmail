@@ -1,0 +1,246 @@
+#!/usr/bin/python
+# -*- coding: utf-8 *-*
+
+'''
+DocMailer 0.3.2
+Copyright 2011 Dirk Winkel
+
+    This file is part of DocMailer.
+
+    DocMailer is free software: you can redistribute it and/or modify
+    it under the terms of the GNU General Public License as published by
+    the Free Software Foundation, either version 3 of the License, or
+    (at your option) any later version.
+
+    This program is distributed in the hope that it will be useful,
+    but WITHOUT ANY WARRANTY; without even the implied warranty of
+    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+    GNU General Public License for more details.
+
+    You should have received a copy of the GNU General Public License
+    along with DocMailer.  If not, see <http://www.gnu.org/licenses/>.
+'''
+
+import smtplib, base64, sys, os, tempfile
+from subprocess import Popen, PIPE
+from email.MIMEMultipart import MIMEMultipart
+from email.MIMEBase import MIMEBase
+from email.MIMEText import MIMEText
+from email.Utils import COMMASPACE, formatdate
+from email import Encoders
+from getpass import getpass
+import argparse, ConfigParser
+
+version = '0.3.2'
+
+print 'DocMail version %s, type "./docmail.py -h" for usage information' % version
+
+config = ConfigParser.ConfigParser()
+config.read('/etc/docmail.conf')
+sender = config.get('mail', 'sender')
+if sender == 'your@address.net':
+    print "It looks like you haen't configured docmail yet.\nPlease edit '/etc/docmail.conf'!"
+    exit(1)
+receiver = config.get('mail', 'receiver')
+# SMTP-authentication
+server = config.get('server', 'server')
+port = config.get('server', 'port')
+user = config.get('server', 'user')
+# OCR-Settings
+lang = config.get('ocr', 'language')
+papersize = config.get('ocr', 'papersize')
+
+# Kommandozeilenparameter parsen
+parser = argparse.ArgumentParser(
+        description='Scan and OCR a document, or OCR any image or pdf, and eMail it to yourself.',
+        epilog='dependencies: imagemagick sane-utils cuneiform exactimage python-argparse pdftk')
+parser.add_argument('-n', '--numScans', action='store', default=-1,
+        help='number of pages to scan with your default sane scanner')
+parser.add_argument('files', nargs='*', default=[],
+        help='one or more files to OCR and eMail; Use \'scan\' to insert a scan with your default sane scanner')
+parser.add_argument('-s', '--subject', action='store', default='[no subject given]',
+        help='subject of the eMail')
+parser.add_argument('-t', '--to', action='store', dest='receiver',
+        help='eMail-adress to send the eMail to (overrides config file)')
+parser.add_argument('-p', '--password', action='store', dest='password',
+        help='mailserver-password; '
+                'type \'?\' to be asked on the command line (hidden), '
+                'if none given i\'ll try to login without authentication')
+parser.add_argument('-l', '--language', action='store', dest='lang',
+        help='language for ocr; Supported languages: '
+                'eng ger fra rus swe spa ita ruseng ukr srp hrv pol dan por dut cze rum hun bul slo lav lit est tur (overrides config-file)')
+parser.add_argument('-r', '--resolution', action='store', dest='res',
+        help='scan resolution; default: 300')
+parser.add_argument('-m', '--colormode', action='store', dest='mode',
+        help='scanner color mode; default: Lineart, Options: Gray, Color')
+parser.add_argument('-v', '--version', action='version', version=version)
+args = parser.parse_args()
+if args.receiver: receiver=args.receiver
+if args.lang: lang=args.lang
+if args.res: res=args.res
+else: res=300
+if not args.mode: mode='Lineart'
+elif args.mode == 'Gray': mode = args.mode
+elif args.mode == 'Color': mode = args.mode
+else: 
+    sys.stderr.write('Error: invalid color mode: Options are Gray and Color, default is Lineart\n')
+    sys.exit(1)
+
+def scan(n):
+    '''Bild scannen, OCR durchführen (=Rückgabewert) und in pdf umwandeln'''
+    raw_input('Please place the (next) page of the document at the upper right corner on your scanner and press ENTER')
+    print 'Scanning Image...'
+    scanimage = Popen(['scanimage --format tiff -p --mode %s --resolution=%s %s >temp.tif'
+            % (mode, res, papersize)],
+            stderr=PIPE, shell=True) # shell=True wg. >temp (keine option)
+    Popen.wait(scanimage)
+    out = scanimage.stderr.read()
+    if out == 'scanimage: no SANE devices found\n':
+        sys.stderr.write('ERROR: no standard sane scanner found! Aborting.\n')
+        sys.exit(1)
+    # Zwischenschritt png: Da einfarbig macht es die pdf deutlich kleiner und -trim wird vor dem OCR angewendet
+    os.system('convert temp.tif -trim temp.png')
+    print 'Doing OCR of image...'
+    document = ''
+    os.system('cuneiform -l %s -o temp.txt temp.png' % lang)
+    os.system('cuneiform -l %s -f hocr -o temp.hocr temp.png' % lang)
+    try:
+        document += open('temp.txt').read()
+        os.system('hocr2pdf -i temp.png -s -o temp%03d.pdf < temp.hocr' % n)
+    except IOError:
+        document += 'DocMailer: Error doing OCR of scan'
+        sys.stderr.write('Error doing OCR of scan! Error message will be in the eMail.\n')
+        os.system('convert temp.png temp%03d.pdf' % n)
+    os.system('rm -r temp_files temp.tif temp.txt temp.png temp.hocr') # cleanup
+    return document
+
+# Texterkennung mit tesseract, zZt. nur Deutsch
+def ocr(filename):
+    '''OCR von einem Bild durchführen und als string zurückgeben'''
+    print 'Doing OCR of image...'
+    document = ''
+    os.system('convert %s -auto-orient temp.tif' % filename)
+    os.system('cuneiform -l %s -o temp.txt temp.tif' % lang)
+    try:
+        document += open('temp.txt').read()
+    except IOError:
+        document += 'DocMailer: Error doing OCR of image %s' % filename
+        print 'image %s:' % filename
+        sys.stderr.write('Error doing OCR of image! Error message will be in the eMail.\n')
+    os.system('rm temp.tif temp.txt') # cleanup
+    return document
+
+def mail():
+    '''eMail mit Anhang vorbereiten und verschicken'''
+    #image = args.files[0]
+    msg = MIMEMultipart()
+    msg['From'] = sender
+    msg['To'] = receiver
+    msg['Date'] = formatdate(localtime=True)
+    subjectu = unicode( args.subject, "utf-8" )
+    msg['Subject'] = 'DocMailer: %s' % subjectu
+    
+    attached = False
+    # Scannen der eingestellten Anzahl an scans
+    if int(args.numScans) >= 0:
+        for n in range(int(args.numScans)):
+            msg.attach( MIMEText('\n--- Page %s of %s ---\n' % (n+1, args.numScans), 'plain', 'utf-8'))
+            msg.attach( MIMEText(scan(n), 'plain', 'utf-8'))
+        os.system('pdftk temp*.pdf cat output "DocScan.pdf"')
+        os.system('rm temp*.pdf') # cleanup
+        part = MIMEBase('application', "octet-stream")
+        # Auch ohne Anhänge senden:
+        try:
+            part.set_payload( open('DocScan.pdf', "rb").read())
+        except IOError:
+            msg.attach( MIMEText('\n--- ERROR: FILE NOT FOUND, NO FILE ATTACHED! MAIL-ATTACHEMENT WILL NOT BE USABLE! Did I scan?  ---\n', 'plain', 'utf-8'))
+            print('ERROR: FILE NOT FOUND, NO FILE ATTACHED! MAIL-ATTACHEMENT WILL NOT BE USABLE! Did I scan?')
+        os.system('rm DocScan.pdf') # cleanup
+        Encoders.encode_base64(part)
+        part.add_header('Content-Disposition', 
+                'attachment; filename="DocScan.pdf"')
+        attached = True
+        
+    # optional/alternativ: Einzelbilder oder Einzelscans
+    n = int(001)
+    for fi in args.files:
+        '''Auswertung der Parameter, welche Dokumente verwendet werden'''
+        if fi == 'scan':
+            msg.attach( MIMEText(scan(n), 'plain', 'utf-8'))
+            part = MIMEBase('application', "octet-stream")
+            part.set_payload( open('temp%03d.pdf' % n,"rb").read())
+            Encoders.encode_base64(part)
+            part.add_header('Content-Disposition', 
+                    'attachment; filename="scan%03d.pdf"' % n)
+            os.system('rm temp%03d.pdf' % n) # cleanup
+            n += 1
+            
+        else:
+            msg.attach( MIMEText(ocr(fi), 'plain', 'utf-8'))
+            part = MIMEBase('application', "octet-stream")
+            part.set_payload( open(fi,"rb").read() )
+            Encoders.encode_base64(part)
+            part.add_header('Content-Disposition', 'attachment; filename="%s"' 
+                    % os.path.basename(fi))
+        attached = True
+    
+    if not attached:
+        n = 001
+        next = True
+        while next:
+            msg.attach( MIMEText('\n--- Page %s ---\n' % n, 'plain', 'utf-8'))
+            msg.attach( MIMEText(scan(n), 'plain', 'utf-8'))
+            n += 1
+            nextanswer = raw_input('Do you want to scan another page? (y / n)')
+            if nextanswer != 'y':
+                next = False
+        os.system('pdftk temp*.pdf cat output "DocScan.pdf"')
+        os.system('rm temp*.pdf') # cleanup
+        part = MIMEBase('application', "octet-stream")
+        part.set_payload( open('DocScan.pdf', "rb").read())
+        os.system('rm DocScan.pdf') # cleanup
+        Encoders.encode_base64(part)
+        part.add_header('Content-Disposition', 
+                'attachment; filename="DocScan.pdf"')
+        attached = True
+    
+    if attached:
+        msg.attach(part)
+    
+    smtp = smtplib.SMTP(server, port)
+    smtp.starttls()
+    try:
+        if args.password == '?':
+            password = getpass('Enter password for server %s:' % server)
+            smtp.login(user, password)
+        elif args.password:
+            print 'password given, using login for %s' % server
+            smtp.login(user, args.password)
+        else:
+            print 'no password given, using anonymous login to %s' % server
+        print 'Sending eMail with attached image to %s. \nDepending on your connection this may take a while...' % receiver
+        smtp.sendmail(sender, receiver, msg.as_string() )
+        smtp.close()
+        sys.stdout.write('Successfully sent eMail!\n')
+    except smtplib.SMTPAuthenticationError:
+        print ('LOGIN-ERROR: Retrying connection for user %s.' % user)
+        password = getpass('Enter password for server %s:' % server)
+        try:
+            smtp.login(user, password)
+            print 'Sending eMail with attached image to %s. \nDepending on your connection this may take a while...' % receiver
+            smtp.sendmail(sender, receiver, msg.as_string() )
+            smtp.close()
+            sys.stdout.write('Successfully sent eMail!\n')
+        except:
+            sys.stderr.write('SERVER ERROR! FAILED TO SEND EMAIL!\n')            
+            sys.exit(1)
+    except:
+        sys.stderr.write('UNKNOWN SERVER ERROR! FAILED TO SEND EMAIL!\n')
+    if not attached:
+        print 'WARNING: Nothing attached, send an empty eMail!\n    type "./docmailer.py -h" for info how to use DocMailer.'
+
+tmpfolder = tempfile.mkdtemp(prefix='docmail') # create temporary folder
+os.chdir(tmpfolder)
+mail()
+os.chdir(os.path.expanduser("~"))
+os.popen('rm -R %s/docmail*' % tempfile.gettempdir()) # cleanup

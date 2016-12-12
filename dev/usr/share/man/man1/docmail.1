@@ -1,0 +1,173 @@
+.TH docmail "1" "0.4.0" "scan, ocr and mail documents to yourself"
+
+.SH NAME
+docmail \- micro email document manager
+
+.SH SYNOPSIS
+\fBdocmail\fR [-h] [-n NUMSCANS] [-s SUBJECT] [-t RECEIVER] [-p PASSWORD] [-l LANG] [-r RES] [-m MODE] [-v VERSION] [file [file ...]]\fR
+
+.SH DESCRIPTION
+docmail is al micro dokumant management system. It will scan your documents with your default sane scanner (or takes them as files), do an OCR and eMail them to yourself.
+
+.SH OPTIONS
+.IP "\fB\-\-dotmatrix\fR" 4
+Use recognition mode optimized for text printed with a dot matrix printer.
+
+.IP "\fB\-n, --numScans\fR" 4
+number of pages to scan with your default sane scanner
+
+.IP "\fB\files \fR \fIfilenames\fR" 4
+one or more files to OCR and eMail; Use \'scan\' to insert a scan with your default sane scanner
+
+.IP "\fB\-s --subject\fR" 4
+subject of the eMail
+
+.IP "\fB\-t --to\fR" 4
+eMail-adress to send the eMail to (overrides config file)
+
+.IP "\fB\-p --password
+mailserver-password
+type \'?\' to be asked on the command line (hidden)
+if none given i\'ll try to login without authentication
+
+.IP "\fB\-l --language\fR" 4
+By default docmail recognizes the languages specified in the config file. To change the language use the command line switch \fB\-l\fR followed by a language code (typically an ISO 639-2 three-letter code). The following languages are supported:
+.TS
+ll.
+T{
+\fBbul\fR
+T}	T{
+Bulgarian
+T}
+T{
+\fBcze\fR
+T}	T{
+Czech
+T}
+T{
+\fBdan\fR
+T}	T{
+Danish
+T}
+T{
+\fBdut\fR
+T}	T{
+Dutch
+T}
+T{
+\fBeng\fR
+T}	T{
+English
+T}
+T{
+\fBest\fR
+T}	T{
+Estonian
+T}
+T{
+\fBfra\fR
+T}	T{
+French
+T}
+T{
+\fBger\fR
+T}	T{
+German
+T}
+T{
+\fBhrv\fR
+T}	T{
+Croatian
+T}
+T{
+\fBhun\fR
+T}	T{
+Hungarian
+T}
+T{
+\fBita\fR
+T}	T{
+Italian
+T}
+T{
+\fBlav\fR
+T}	T{
+Latvian
+T}
+T{
+\fBlit\fR
+T}	T{
+Lithuanian
+T}
+T{
+\fBpol\fR
+T}	T{
+Polish
+T}
+T{
+\fBpor\fR
+T}	T{
+Portugese
+T}
+T{
+\fBrum\fR
+T}	T{
+Romanian
+T}
+T{
+\fBrus\fR
+T}	T{
+Russian
+T}
+T{
+\fBruseng\fR
+T}	T{
+mixed Russian/English
+T}
+T{
+\fBslv\fR
+T}	T{
+Slovenian
+T}
+T{
+\fBspa\fR
+T}	T{
+Spanish
+T}
+T{
+\fBsrp\fR
+T}	T{
+Serbian
+T}
+T{
+\fBswe\fR
+T}	T{
+Swedish
+T}
+T{
+\fBtur\fR
+T}	T{
+Turkish
+T}
+T{
+\fBukr\fR
+T}	T{
+Ukrainian
+T}
+.TE
+.
+
+.IP "\fB\-r --resolution\fR" 4
+scan resolution; default: 300
+
+.IP "\fB\-m --colormode\fR" 4
+scanner color mode; default: Lineart, Options: Gray, Color
+
+.IP "\fB\-v --version\fR" 4
+print the version number of docmail and exit
+
+.SH HOMEPAGE
+More information about cuneiform can be found at <\fIhttp://polarwinkel.de/\fR>.
+
+.SH AUTHOR
+cuneiform was written by Dirk Winkel <\fIit@polarwinkel.de\fR>.
