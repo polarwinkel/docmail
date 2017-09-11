@@ -2,7 +2,7 @@
 
 # Script um docmail-deb-file zu bauen
 # Bitte passende Version eintragen:
-version="0_4_0"
+version="0_4_1"
 
 # altes paket löschen:
 rm docmail_$version.deb
