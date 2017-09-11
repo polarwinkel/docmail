@@ -2,8 +2,8 @@
 # -*- coding: utf-8 *-*
 
 '''
-DocMailer 0.4.0
-Copyright 2011-2016 Dirk Winkel
+DocMail
+Copyright 2011-2017 Dirk Winkel
 
     This file is part of DocMailer.
 
@@ -31,7 +31,7 @@ from email import Encoders
 from getpass import getpass
 import argparse, ConfigParser
 
-version = '0.3.2'
+version = '0.4.1'
 
 print 'DocMail version %s, type "./docmail.py -h" for usage information' % version
 
@@ -39,7 +39,7 @@ config = ConfigParser.ConfigParser()
 config.read('/etc/docmail.conf')
 sender = config.get('mail', 'sender')
 if sender == 'your@address.net':
-    print "It looks like you haen't configured docmail yet.\nPlease edit '/etc/docmail.conf'!"
+    print "It looks like you have not configured docmail yet.\nPlease edit '/etc/docmail.conf'!"
     exit(1)
 receiver = config.get('mail', 'receiver')
 # SMTP-authentication
