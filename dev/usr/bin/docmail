@@ -32,7 +32,7 @@ from getpass import getpass
 import argparse, configparser
 #from pycountries import countries
 
-version = '0.5.0'
+version = '0.5.1'
 
 print('DocMail version %s, type "./docmail.py -h" for usage information' % version)
 
@@ -106,16 +106,16 @@ def scan(n):
 #    os.system('cuneiform -l %s -o temp.txt temp.png' % lang)
 #    os.system('cuneiform -l %s -f hocr -o temp.hocr temp.png' % lang)
 #    os.system('tesseract temp.png temp -l %s' % lang)
-    os.system('tesseract temp.png temp%s -l %s pdf txt' % ('{0:03}'.format(n), lang))
+    os.system('tesseract temp.png temp%s -l %s pdf txt' % ('{0:03}'.format(n), lang) )
     try:
-        document += open('temp.txt').read()
+        document += open('temp%s.txt' % '{0:03}'.format(n) ).read()
 #        os.system('hocr2pdf -i temp.png -s -o temp%03d.pdf < temp.hocr' % n)
     except IOError:
         document += 'DocMailer: Error doing OCR of scan'
         sys.stderr.write('Error doing OCR of scan! Error message will be in the eMail.\n')
 #        os.system('convert temp.png temp%03d.pdf' % n)
 #    os.system('rm -r temp_files temp.tif temp.txt temp.png temp.hocr') # cleanup
-    os.system('rm -r temp.tif temp.txt temp.png') # cleanup
+    os.system('rm -r temp.tif temp%s.txt temp.png' % '{0:03}'.format(n) ) # cleanup
     return document
 
 # Texterkennung mit tesseract
@@ -142,7 +142,7 @@ def mail():
     msg['From'] = sender
     msg['To'] = receiver
     msg['Date'] = formatdate(localtime=True)
-    subjectu = args.subject.encode('utf-8' )
+    subjectu = args.subject
     msg['Subject'] = 'DocMailer: %s' % subjectu
     
     attached = False
