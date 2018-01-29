@@ -60,7 +60,7 @@ sudo apt-get install imagemagick sane-utils cuneiform exactimage python-argparse
 
 Licence
 -------
-Copyright 2011, 2013 Dirk Winkel
+Copyright 2011 - 2018 Dirk Winkel
 
     This file is part of DocMailer.
 
