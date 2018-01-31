@@ -31,8 +31,9 @@ from email import encoders
 from getpass import getpass
 import argparse, configparser
 #from pycountries import countries
+import time
 
-version = '0.5.1'
+version = '0.6.0'
 
 print('DocMail version %s, type "./docmail.py -h" for usage information' % version)
 
@@ -73,26 +74,55 @@ parser.add_argument('-l', '--language', action='store', dest='lang',
 parser.add_argument('-r', '--resolution', action='store', dest='res',
         help='scan resolution; default: 300')
 parser.add_argument('-m', '--colormode', action='store', dest='mode',
-        help='scanner color mode; default: Lineart, Options: Gray, Color')
+        help='scanner color mode; default: Gray; Options: Lineart, Gray, Color')
+parser.add_argument('-b', '--brightness', action='store', dest='brightness',
+        help='scanner brightness; default: -20; Options: -100..100')
+parser.add_argument('-c', '--contrast', action='store', dest='contrast',
+        help='scanner contrast; default: 100; Options: -100..100')
+parser.add_argument('-i', '--imagebrightness', action='store', dest='ibrightness',
+        help='image brighness (only if docmailing images, not scans); default: 40; Options: -100..100')
 parser.add_argument('-v', '--version', action='version', version=version)
 args = parser.parse_args()
 if args.receiver: receiver=args.receiver
 if args.lang: lang=args.lang
 if args.res: res=args.res
 else: res=300
-if not args.mode: mode='Lineart'
+if not args.mode:
+    mode='Gray'
+elif args.mode == 'Lineart': mode = args.mode
 elif args.mode == 'Gray': mode = args.mode
 elif args.mode == 'Color': mode = args.mode
 else: 
     sys.stderr.write('Error: invalid color mode: Options are Gray and Color, default is Lineart\n')
+    sys.exit(1)
+if not args.brightness:
+    args.brightness='-50'
+try:
+    int(args.brightness)
+except ValueError:
+    sys.stderr.write('Error: invalid brightness: Options are -100..100\n')
+    sys.exit(1)
+if not args.contrast:
+    args.contrast='100'
+try:
+    int(args.contrast)
+except ValueError:
+    sys.stderr.write('Error: invalid contrast: Options are -100..100\n')
+    sys.exit(1)
+if not args.ibrightness:
+    args.ibrightness='40'
+try:
+    int(args.ibrightness)
+except ValueError:
+    sys.stderr.write('Error: invalid image-brightness: Options are -100..100\n')
     sys.exit(1)
 
 def scan(n):
     '''Bild scannen, OCR durchführen (=Rückgabewert) und in pdf umwandeln'''
     input('Please place the (next) page of the document at the upper right corner on your scanner and press ENTER')
     print('Scanning Image...')
-    scanimage = Popen(['scanimage --format tiff -p --mode %s --resolution=%s %s >temp.tif'
-            % (mode, res, papersize)],
+    scanimage = Popen(['scanimage --format png -p --mode %s --brightness %s --contrast %s --resolution=%s %s >scan.png'
+            % (mode, args.brightness, args.contrast, res, papersize)],
             stderr=PIPE, shell=True) # shell=True wg. >temp (keine option)
     Popen.wait(scanimage)
     out = scanimage.stderr.read()
@@ -100,39 +130,22 @@ def scan(n):
         sys.stderr.write('ERROR: no standard sane scanner found! Aborting.\n')
         sys.exit(1)
     # Zwischenschritt png: Da einfarbig macht es die pdf deutlich kleiner und -trim wird vor dem OCR angewendet
-    os.system('convert temp.tif -trim temp.png')
+    os.system('convert scan.png -trim scan.png')
     print('Doing OCR of image...')
     document = ''
 #    os.system('cuneiform -l %s -o temp.txt temp.png' % lang)
 #    os.system('cuneiform -l %s -f hocr -o temp.hocr temp.png' % lang)
 #    os.system('tesseract temp.png temp -l %s' % lang)
-    os.system('tesseract temp.png temp%s -l %s pdf txt' % ('{0:03}'.format(n), lang) )
+    os.system('tesseract scan.png scan%s -l %s pdf txt' % ('{0:03}'.format(n), lang) )
     try:
-        document += open('temp%s.txt' % '{0:03}'.format(n) ).read()
+        document += open('scan%s.txt' % '{0:03}'.format(n) ).read()
 #        os.system('hocr2pdf -i temp.png -s -o temp%03d.pdf < temp.hocr' % n)
     except IOError:
         document += 'DocMailer: Error doing OCR of scan'
         sys.stderr.write('Error doing OCR of scan! Error message will be in the eMail.\n')
 #        os.system('convert temp.png temp%03d.pdf' % n)
 #    os.system('rm -r temp_files temp.tif temp.txt temp.png temp.hocr') # cleanup
-    os.system('rm -r temp.tif temp%s.txt temp.png' % '{0:03}'.format(n) ) # cleanup
-    return document
-
-# Texterkennung mit tesseract
-def ocr(filename):
-    '''OCR von einem Bild durchführen und als string zurückgeben'''
-    print('Doing OCR of image...')
-    document = ''
-    os.system('convert %s -auto-orient temp.tif' % filename)
-#    os.system('cuneiform -l %s -o temp.txt temp.tif' % lang)
-    os.system('tesseract temp.png temp -l %s' % lang)
-    try:
-        document += open('temp.txt').read()
-    except IOError:
-        document += 'DocMailer: Error doing OCR of image %s' % filename
-        print('image %s:' % filename)
-        sys.stderr.write('Error doing OCR of image! Error message will be in the eMail.\n')
-    os.system('rm temp.tif temp.txt') # cleanup
+    os.system('rm -r scan%s.txt scan.png' % '{0:03}'.format(n) ) # cleanup
     return document
 
 def mail():
@@ -151,8 +164,8 @@ def mail():
         for n in range(int(args.numScans)):
             msg.attach( MIMEText('\n--- Page %s of %s ---\n' % (n+1, args.numScans), 'plain', 'utf-8'))
             msg.attach( MIMEText(scan(n), 'plain', 'utf-8'))
-        os.system('pdftk temp*.pdf cat output "DocScan.pdf"')
-        os.system('rm temp*.pdf') # cleanup
+        os.system('pdftk scan*.pdf cat output "DocScan.pdf"')
+        os.system('rm scan*.pdf') # cleanup
         part = MIMEBase('application', "octet-stream")
         # Auch ohne Anhänge senden:
         try:
@@ -161,7 +174,7 @@ def mail():
             msg.attach( MIMEText('\n--- ERROR: FILE NOT FOUND, NO FILE ATTACHED! MAIL-ATTACHEMENT WILL NOT BE USABLE! Did I scan?  ---\n', 'plain', 'utf-8'))
             print('ERROR: FILE NOT FOUND, NO FILE ATTACHED! MAIL-ATTACHEMENT WILL NOT BE USABLE! Did I scan?')
         os.system('rm DocScan.pdf') # cleanup
-        Encoders.encode_base64(part)
+        encoders.encode_base64(part)
         part.add_header('Content-Disposition', 
                 'attachment; filename="DocScan.pdf"')
         attached = True
@@ -169,48 +182,55 @@ def mail():
     # optional/alternativ: Einzelbilder oder Einzelscans
     n = 0
     for fi in args.files:
+        msg.attach( MIMEText('\n--- Page %s ---\n' % (n+1), 'plain', 'utf-8'))
+        part = MIMEBase('application', "octet-stream")
         '''Auswertung der Parameter, welche Dokumente verwendet werden'''
         if fi == 'scan':
             msg.attach( MIMEText(scan(n), 'plain', 'utf-8'))
-            part = MIMEBase('application', "octet-stream")
-            part.set_payload( open('temp%s.pdf' % '{0:03}'.format(n),"rb").read())
-            Encoders.encode_base64(part)
-            part.add_header('Content-Disposition', 
-                    'attachment; filename="scan%s.pdf"' % '{0:03}'.format(n))
-            os.system('rm temp%s.pdf' % '{0:03}'.format(n)) # cleanup
-            n += 1
-            
         else:
-            msg.attach( MIMEText(ocr(fi), 'plain', 'utf-8'))
-            part = MIMEBase('application', "octet-stream")
-            part.set_payload( open(fi,"rb").read() )
-            Encoders.encode_base64(part)
-            part.add_header('Content-Disposition', 'attachment; filename="%s"' 
-                    % os.path.basename(fi))
+            filepath = rundir+'/'+fi
+            os.system('convert %s -colorspace %s -brightness-contrast %sx%s -trim scan%s.png'
+                    % (filepath, mode, args.ibrightness, args.contrast, '{0:03}'.format(n)))
+            os.system('tesseract scan%s.png scan%s -l %s pdf txt' % ('{0:03}'.format(n), '{0:03}'.format(n), lang) )
+            document = ''
+            try:
+                document += open('scan%s.txt' % '{0:03}'.format(n) ).read()
+            except IOError:
+                document += 'DocMailer: Error doing OCR of scan'
+                sys.stderr.write('Error doing OCR of scan! Error message will be in the eMail.\n')
+            msg.attach( MIMEText(document, 'plain', 'utf-8'))
+        part.add_header('Content-Disposition', 'attachment; filename="scan%s.pdf"' % '{0:03}'.format(n))
+        part.set_payload( open('scan%s.pdf' % '{0:03}'.format(n),"rb").read())
+        encoders.encode_base64(part)
+        msg.attach(part)
         attached = True
+        os.system('rm scan%s.*' % '{0:03}'.format(n)) # cleanup
+        n += 1
     
-    if not attached:
+    if not attached: # when no -n or file-option is used
+        # scan pages:
         n = 1
+        mailtext = ''
         next = True
         while next:
-            msg.attach( MIMEText('\n--- Page %s ---\n' % n, 'plain', 'utf-8'))
-            msg.attach( MIMEText(scan(n), 'plain', 'utf-8'))
+            mailtext = mailtext + ('\n--- Page %s ---\n' % n)
+            mailtext = mailtext + scan(n)
             n += 1
             nextanswer = input('Do you want to scan another page? (y / n)')
             if nextanswer != 'y':
                 next = False
-        os.system('pdftk temp*.pdf cat output "DocScan.pdf"')
-        os.system('rm temp*.pdf') # cleanup
+        # put the pdf-files together and attach them:
+        os.system('pdftk scan*.pdf cat output "DocScan.pdf"')
+        os.system('rm scan*.pdf') # cleanup
         part = MIMEBase('application', "octet-stream")
         part.set_payload( open('DocScan.pdf', "rb").read())
         os.system('rm DocScan.pdf') # cleanup
         encoders.encode_base64(part)
         part.add_header('Content-Disposition', 
                 'attachment; filename="DocScan.pdf"')
-        attached = True
-    
-    if attached:
+        msg.attach(MIMEText(mailtext, 'plain', 'utf-8'))
         msg.attach(part)
+        attached = True
     
     smtp = smtplib.SMTP(server, port)
     smtp.starttls()
@@ -245,6 +265,7 @@ def mail():
         print('WARNING: Nothing attached, send an empty eMail!\n    type "./docmailer.py -h" for info how to use DocMailer.')
 
 tmpfolder = tempfile.mkdtemp(prefix='docmail') # create temporary folder
+rundir = os.getcwd()
 os.chdir(tmpfolder)
 mail()
 os.chdir(os.path.expanduser("~"))

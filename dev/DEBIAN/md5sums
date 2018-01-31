@@ -1,6 +1,6 @@
 59ada93ef29217435400a157fb3c1831  etc/docmail.conf
-9f1c2f2d032ae6761f99eb5ed866282c  usr/bin/docmail
+1fa8eed7cbb47dd1fed602a813f685a7  usr/bin/docmail
 6ce1c96383f3e11e247b01a976a3a8a9  usr/share/doc/docmail/copyright
-b792a058d54386d3568d59f0a9fc9b66  usr/share/doc/docmail/changelog.Debian.gz
+277b1ec667be5e87f65a53e2d6cf17a9  usr/share/doc/docmail/changelog.Debian.gz
 931d268aeb6b6c33e2d6f1519c7add13  usr/share/doc/docmail/readme.txt.gz
-475ac60e5fb62f3a330692df2d3950d4  usr/share/man/man1/docmail.1.gz
+dc78345e73f31aa56ebb091711cb95a3  usr/share/man/man1/docmail.1.gz

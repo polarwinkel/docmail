@@ -1,4 +1,4 @@
-.TH docmail "1" "0.5.1" "scan, ocr and mail documents to yourself"
+.TH docmail "1" "0.6.0" "scan, ocr and mail documents to yourself"
 
 .SH NAME
 docmail \- micro email document manager
@@ -31,137 +31,19 @@ type \'?\' to be asked on the command line (hidden)
 if none given i\'ll try to login without authentication
 
 .IP "\fB\-l --language\fR" 4
-By default docmail recognizes the languages specified in the config file. To change the language use the command line switch \fB\-l\fR followed by a language code (typically an ISO 639-2 three-letter code). The following languages are supported:
-.TS
-ll.
-T{
-\fBbul\fR
-T}	T{
-Bulgarian
-T}
-T{
-\fBcze\fR
-T}	T{
-Czech
-T}
-T{
-\fBdan\fR
-T}	T{
-Danish
-T}
-T{
-\fBdut\fR
-T}	T{
-Dutch
-T}
-T{
-\fBeng\fR
-T}	T{
-English
-T}
-T{
-\fBest\fR
-T}	T{
-Estonian
-T}
-T{
-\fBfra\fR
-T}	T{
-French
-T}
-T{
-\fBdeu\fR
-T}	T{
-German
-T}
-T{
-\fBhrv\fR
-T}	T{
-Croatian
-T}
-T{
-\fBhun\fR
-T}	T{
-Hungarian
-T}
-T{
-\fBita\fR
-T}	T{
-Italian
-T}
-T{
-\fBlav\fR
-T}	T{
-Latvian
-T}
-T{
-\fBlit\fR
-T}	T{
-Lithuanian
-T}
-T{
-\fBpol\fR
-T}	T{
-Polish
-T}
-T{
-\fBpor\fR
-T}	T{
-Portugese
-T}
-T{
-\fBrum\fR
-T}	T{
-Romanian
-T}
-T{
-\fBrus\fR
-T}	T{
-Russian
-T}
-T{
-\fBruseng\fR
-T}	T{
-mixed Russian/English
-T}
-T{
-\fBslv\fR
-T}	T{
-Slovenian
-T}
-T{
-\fBspa\fR
-T}	T{
-Spanish
-T}
-T{
-\fBsrp\fR
-T}	T{
-Serbian
-T}
-T{
-\fBswe\fR
-T}	T{
-Swedish
-T}
-T{
-\fBtur\fR
-T}	T{
-Turkish
-T}
-T{
-\fBukr\fR
-T}	T{
-Ukrainian
-T}
-.TE
-.
+By default docmail recognizes the languages specified in the config file. To change the language use the command line switch \fB\-l\fR followed by a language code (an ISO 639-2 three-letter code). Check the man-page of tesseract to get a list of supported languages.
 
 .IP "\fB\-r --resolution\fR" 4
 scan resolution; default: 300
 
 .IP "\fB\-m --colormode\fR" 4
-scanner color mode; default: Lineart, Options: Gray, Color
+scanner color mode; default: Gray, Options: Lineart, Gray, Color
+
+.IP "\fB\-b --brightness\fR" 4
+scanner brightness; default: -50, Options: -100..100
+
+.IP "\fB\-c --contrast\fR" 4
+scanner contrast; default: 100 (to keep the file size small), Options: -100..100
 
 .IP "\fB\-v --version\fR" 4
 print the version number of docmail and exit
