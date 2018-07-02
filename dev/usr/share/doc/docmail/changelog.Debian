@@ -1,3 +1,9 @@
+docmail (0.7.0-1) stable; urgency=low
+
+  * changed away from pdftk, since it's not included in Ubuntu 18.04 any more
+
+ -- Dirk Winkel <it@polarwinkel.de>  Mon, 02 Jul 2018 12:00:00 +0100
+
 docmail (0.6.0-1) stable; urgency=low
 
   * highly improved image-quality
@@ -5,7 +11,7 @@ docmail (0.6.0-1) stable; urgency=low
   * better OCR-performance due to better image quality
   * bugfixes when docmailing images or using -n-option
 
- -- Dirk Winkel <it@polarwinkel.de>  Mon, 31 Jan 2018 13:30:00 +0100
+ -- Dirk Winkel <it@polarwinkel.de>  Wed, 31 Jan 2018 13:30:00 +0100
 
 docmail (0.5.1-1) stable; urgency=low
 

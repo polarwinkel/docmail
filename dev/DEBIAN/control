@@ -1,9 +1,9 @@
 Package: docmail
-Version: 0.6.0-1
+Version: 0.7.0-1
 Architecture: all
 Maintainer: Dirk Winkel <it@polarwinkel.de>
 Installed-Size: 79
-Depends: python3 (>= 2.7.0), python3-pycountry (>= 1.8), sane (>= 1.0.0), imagemagick (>=6.0.0), tesseract-ocr (>= 3.0.0), tesseract-ocr-eng (>= 3.0.0), tesseract-ocr-deu (>= 3.0.0), pdftk (>=1.4.0), exactimage (>=0.8.9)
+Depends: python3 (>= 2.7.0), python3-pycountry (>= 1.8), sane (>= 1.0.0), graphicsmagick (>=1.3.0), tesseract-ocr (>= 3.0.0), tesseract-ocr-eng (>= 3.0.0), tesseract-ocr-deu (>= 3.0.0), qpdf (>=8.0.0), exactimage (>=0.8.9)
 Section: utils
 Priority: optional
 Homepage: http://polarwinkel.de

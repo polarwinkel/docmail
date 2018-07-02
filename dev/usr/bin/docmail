@@ -33,7 +33,7 @@ import argparse, configparser
 #from pycountries import countries
 import time
 
-version = '0.6.0'
+version = '0.7.0'
 
 print('DocMail version %s, type "./docmail.py -h" for usage information' % version)
 
@@ -55,7 +55,7 @@ papersize = config.get('ocr', 'papersize')
 # Kommandozeilenparameter parsen
 parser = argparse.ArgumentParser(
         description='Scan and OCR a document, or OCR any image or pdf, and eMail it to yourself.',
-        epilog='dependencies: imagemagick sane-utils tesseract-oce exactimage python-argparse pdftk')
+        epilog='dependencies: imagemagick sane-utils tesseract-oce exactimage python-argparse qpdf')
 parser.add_argument('-n', '--numScans', action='store', default=-1,
         help='number of pages to scan with your default sane scanner')
 parser.add_argument('files', nargs='*', default=[],
@@ -164,7 +164,7 @@ def mail():
         for n in range(int(args.numScans)):
             msg.attach( MIMEText('\n--- Page %s of %s ---\n' % (n+1, args.numScans), 'plain', 'utf-8'))
             msg.attach( MIMEText(scan(n), 'plain', 'utf-8'))
-        os.system('pdftk scan*.pdf cat output "DocScan.pdf"')
+        os.system('qpdf --empty --pages scan*.pdf -- DocScan.pdf')
         os.system('rm scan*.pdf') # cleanup
         part = MIMEBase('application', "octet-stream")
         # Auch ohne Anhänge senden:
@@ -220,7 +220,7 @@ def mail():
             if nextanswer != 'y':
                 next = False
         # put the pdf-files together and attach them:
-        os.system('pdftk scan*.pdf cat output "DocScan.pdf"')
+        os.system('qpdf --empty --pages scan*.pdf -- DocScan.pdf')
         os.system('rm scan*.pdf') # cleanup
         part = MIMEBase('application', "octet-stream")
         part.set_payload( open('DocScan.pdf', "rb").read())
